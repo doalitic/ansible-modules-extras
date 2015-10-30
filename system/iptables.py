@@ -56,6 +56,14 @@ options:
     required: false
     default: present
     choices: [ "present", "absent" ]
+  insert:
+    description:
+      - Whether the rule should be inserted at the top or not. If the rule
+        already exists in the chain the rule is deleted and it is inserted
+        at the top of the chain.
+    required: false
+    default: no
+    choices: [ "yes", "no" ]
   ip_version:
     description:
       - Which version of the IP protocol this rule should apply to.
@@ -364,6 +372,11 @@ def append_rule(iptables_path, module, params):
     module.run_command(cmd, check_rc=True)
 
 
+def insert_rule(iptables_path, module, params):
+    cmd = push_arguments(iptables_path, '-I', params)
+    module.run_command(cmd, check_rc=True)
+
+
 def remove_rule(iptables_path, module, params):
     cmd = push_arguments(iptables_path, '-D', params)
     module.run_command(cmd, check_rc=True)
@@ -375,6 +388,7 @@ def main():
         argument_spec=dict(
             table=dict(required=False, default='filter', choices=['filter', 'nat', 'mangle', 'raw', 'security']),
             state=dict(required=False, default='present', choices=['present', 'absent']),
+            insert=dict(required=False, default=False, type='bool', choices=BOOLEANS),
             ip_version=dict(required=False, default='ipv4', choices=['ipv4', 'ipv6']),
             chain=dict(required=True, default=None, type='str'),
             protocol=dict(required=False, default=None, type='str'),
@@ -414,12 +428,13 @@ def main():
         state=module.params['state'],
     )
     ip_version = module.params['ip_version']
+    insert     = module.params['insert']
     iptables_path = module.get_bin_path(BINS[ip_version], True)
     rule_is_present = check_present(iptables_path, module, module.params)
     should_be_present = (args['state'] == 'present')
 
     # Check if target is up to date
-    args['changed'] = (rule_is_present != should_be_present)
+    args['changed'] = ((rule_is_present != should_be_present) or insert)
 
     # Check only; don't modify
     if module.check_mode:
@@ -429,8 +444,15 @@ def main():
     if args['changed'] == False:
         module.exit_json(**args)
 
+    # If rule is present delete it before inserting it at the top
+    if insert and rule_is_present:
+        remove_rule(iptables_path, module, module.params)
+
     if should_be_present:
-        append_rule(iptables_path, module, module.params)
+        if insert:
+            insert_rule(iptables_path, module, module.params)
+        else:
+            append_rule(iptables_path, module, module.params)
     else:
         remove_rule(iptables_path, module, module.params)
 
