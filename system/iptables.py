@@ -427,8 +427,8 @@ def main():
         rule=' '.join(construct_rule(module.params)),
         state=module.params['state'],
     )
+    insert = module.params['insert']
     ip_version = module.params['ip_version']
-    insert     = module.params['insert']
     iptables_path = module.get_bin_path(BINS[ip_version], True)
     rule_is_present = check_present(iptables_path, module, module.params)
     should_be_present = (args['state'] == 'present')
