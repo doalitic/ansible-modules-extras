@@ -388,7 +388,7 @@ def main():
         argument_spec=dict(
             table=dict(required=False, default='filter', choices=['filter', 'nat', 'mangle', 'raw', 'security']),
             state=dict(required=False, default='present', choices=['present', 'absent']),
-            insert=dict(required=False, default=False, type='bool', choices=BOOLEANS),
+            action=dict(required=False, default='append', type='str', choices=['append', 'insert']),
             ip_version=dict(required=False, default='ipv4', choices=['ipv4', 'ipv6']),
             chain=dict(required=True, default=None, type='str'),
             protocol=dict(required=False, default=None, type='str'),
@@ -427,7 +427,7 @@ def main():
         rule=' '.join(construct_rule(module.params)),
         state=module.params['state'],
     )
-    insert = module.params['insert']
+    insert = (module.params['action'] == 'insert')
     ip_version = module.params['ip_version']
     iptables_path = module.get_bin_path(BINS[ip_version], True)
     rule_is_present = check_present(iptables_path, module, module.params)
