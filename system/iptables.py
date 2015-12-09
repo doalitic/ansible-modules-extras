@@ -56,14 +56,13 @@ options:
     required: false
     default: present
     choices: [ "present", "absent" ]
-  insert:
+  action:
     description:
-      - Whether the rule should be inserted at the top or not. If the rule
-        already exists in the chain the rule is deleted and it is inserted
-        at the top of the chain.
+      - Whether the rule should be appended at the bottom or inserted at the
+        top. If the rule already exists the chain won't be modified.
     required: false
-    default: no
-    choices: [ "yes", "no" ]
+    default: append
+    choices: [ "append", "insert" ]
   ip_version:
     description:
       - Which version of the IP protocol this rule should apply to.
@@ -434,7 +433,7 @@ def main():
     should_be_present = (args['state'] == 'present')
 
     # Check if target is up to date
-    args['changed'] = ((rule_is_present != should_be_present) or insert)
+    args['changed'] = (rule_is_present != should_be_present)
 
     # Check only; don't modify
     if module.check_mode:
@@ -443,10 +442,6 @@ def main():
     # Target is already up to date
     if args['changed'] == False:
         module.exit_json(**args)
-
-    # If rule is present delete it before inserting it at the top
-    if insert and rule_is_present:
-        remove_rule(iptables_path, module, module.params)
 
     if should_be_present:
         if insert:
