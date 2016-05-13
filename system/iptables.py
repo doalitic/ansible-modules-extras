@@ -57,6 +57,7 @@ options:
     default: present
     choices: [ "present", "absent" ]
   action:
+    version_added: "2.2"
     description:
       - Whether the rule should be appended at the bottom or inserted at the
         top. If the rule already exists the chain won't be modified.
